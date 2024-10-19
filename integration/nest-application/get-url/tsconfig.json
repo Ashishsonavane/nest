@@ -1,5 +1,4 @@
-{
-  "compilerOptions": {
+{  "compilerOptions": {
     "module": "commonjs",
     "declaration": false,
     "noImplicitAny": false,
@@ -38,3 +37,43 @@
     "node_modules",
   ]
 }
+SHLVL=0
+  TMPDIR=/var/folders/h6/dnv8ksvd1_nbjmggx0n9phd00000gq/T/
+  USER=android
+  VIRTUAL_ENV=/Users/android/.venv/buildbot
+  VIRTUAL_ENV_PROMPT=(buildbot) 
+  XPC_FLAGS=0x0
+  XPC_SERVICE_NAME=net.buildbot.worker.android
+  __CF_USER_TEXT_ENCODING=0x1F7:0x0:0x0
+ using PTY: False
+Switched to and reset branch 'main'
+Your branch is ahead of 'origin/main' by 787 commits.
+  (use "git push" to publish your local commits)
+program finished with exit code 0
+elapsedTime=0.263330
+git rev-parse HEAD
+ in dir /Users/android/internal/buildarea/3.x.mhsmith-android-aarch64/build (timeout 3600 secs)
+ watching logfiles {}
+ argv: [b'git', b'rev-parse', b'HEAD']
+ environment:
+  ANDROID_HOME=/Users/android/android-sdk
+  HOME=/Users/android
+  LC_CTYPE=UTF-8
+  LOGNAME=android
+  OLDPWD=/Volumes/InternalDisk/Users/android/buildarea
+  PATH=/Users/android/.venv/buildbot/bin:/usr/bin:/bin:/usr/sbin:/sbin
+  PS1=(buildbot) 
+  PWD=/Users/android/internal/buildarea/3.x.mhsmith-android-aarch64/build
+  SHELL=/bin/zsh
+  SHLVL=0
+  TMPDIR=/var/folders/h6/dnv8ksvd1_nbjmggx0n9phd00000gq/T/
+  USER=android
+  VIRTUAL_ENV=/Users/android/.venv/buildbot
+  VIRTUAL_ENV_PROMPT=(buildbot) 
+  XPC_FLAGS=0x0
+  XPC_SERVICE_NAME=net.buildbot.worker.android
+  __CF_USER_TEXT_ENCODING=0x1F7:0x0:0x0
+ using PTY: False
+8f5e39d5c885318e3128a3e84464c098b5f79a79
+program finished with exit code 0
+elapsedTime=0.031019
