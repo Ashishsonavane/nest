@@ -59,3 +59,743 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+      export default async function Page() {
+  let data = await fetch('https://api.vercel.app/blog')
+  let posts = await data.json()
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+export default async function Page() {
+  let data = await fetch('https://api.vercel.app/blog')
+  let posts = await data.json()
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+import { db, posts } from '@/lib/db'
+ 
+export default async function Page() {
+  let allPosts = await db.select().from(posts)
+  return (
+    <ul>
+      {allPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+export const dynamic = 'force-dynamic'
+'use client'
+ 
+import { useState, useEffect } from 'react'
+ 
+export function Posts() {
+  const [posts, setPosts] = useState(null)
+ 
+  useEffect(() => {
+    async function fetchPosts() {
+      let res = await fetch('https://api.vercel.app/blog')
+      let data = await res.json()
+      setPosts(data)
+    }
+    fetchPosts()
+  }, [])
+ 
+  if (!posts) return <div>Loading...</div>
+ 
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+import { unstable_cache } from 'next/cache'
+import { db, posts } from '@/lib/db'
+ 
+const getPosts = unstable_cache(
+  async () => {
+    return await db.select().from(posts)
+  },
+  ['posts'],
+  { revalidate: 3600, tags: ['posts'] }
+)
+ 
+export default async function Page() {
+  const allPosts = await getPosts()
+ 
+  return (
+    <ul>
+      {allPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+import { notFound } from 'next/navigation'
+ 
+interface Post {
+  id: string
+  title: string
+  content: string
+}
+ 
+async function getPost(id: string) {
+  let res = await fetch(`https://api.vercel.app/blog/${id}`)
+  let post: Post = await res.json()
+  if (!post) notFound()
+  return post
+}
+ 
+export async function generateStaticParams() {
+  let posts = await fetch('https://api.vercel.app/blog').then((res) =>
+    res.json()
+  )
+ 
+  return posts.map((post: Post) => ({
+    id: post.id,
+  }))
+}
+ 
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  let post = await getPost(params.id)
+ 
+  return {
+    title: post.title,
+  }
+}
+ 
+export default async function Page({ params }: { params: { id: string } }) {
+  let post = await getPost(params.id)
+ 
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.content}</p>
+    </article>
+  )
+}
+import { cache } from 'react'
+import { db, posts, eq } from '@/lib/db' // Example with Drizzle ORM
+import { notFound } from 'next/navigation'
+ 
+export const getPost = cache(async (id) => {
+  const post = await db.query.posts.findFirst({
+    where: eq(posts.id, parseInt(id)),
+  })
+ 
+  if (!post) notFound()
+  return post
+})
+export default async function Page({
+  params: { username },
+}: {
+  params: { username: string }
+}) {
+  // Get artist information
+  const artist = await getArtist(username)
+ 
+  return (
+    <>
+      <h1>{artist.name}</h1>
+      {/* Show fallback UI while the Playlists component is loading */}
+      <Suspense fallback={<div>Loading...</div>}>
+        {/* Pass the artist ID to the Playlists component */}
+        <Playlists artistID={artist.id} />
+      </Suspense>
+    </>
+  )
+}
+ 
+async function Playlists({ artistID }: { artistID: string }) {
+  // Use the artist ID to fetch playlists
+  const playlists = await getArtistPlaylists(artistID)
+ 
+  return (
+    <ul>
+      {playlists.map((playlist) => (
+        <li key={playlist.id}>{playlist.name}</li>
+      ))}
+    </ul>
+  )
+}
+import Albums from './albums'
+ 
+async function getArtist(username: string) {
+  const res = await fetch(`https://api.example.com/artist/${username}`)
+  return res.json()
+}
+ 
+async function getAlbums(username: string) {
+  const res = await fetch(`https://api.example.com/artist/${username}/albums`)
+  return res.json()
+}
+ 
+export default async function Page({
+  params: { username },
+}: {
+  params: { username: string }
+}) {
+  const artistData = getArtist(username)
+  const albumsData = getAlbums(username)
+ 
+  // Initiate both requests in parallel
+  const [artist, albums] = await Promise.all([artistData, albumsData])
+ 
+  return (
+    <>
+      <h1>{artist.name}</h1>
+      <Albums list={albums} />
+    </>
+  )
+}
+import { getItem } from '@/utils/get-item'
+ 
+export const preload = (id: string) => {
+  // void evaluates the given expression and returns undefined
+  // https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/void
+  void getItem(id)
+}
+export default async function Item({ id }: { id: string }) {
+  const result = await getItem(id)
+  // ...
+}
+import Item, { preload, checkIsAvailable } from '@/components/Item'
+ 
+export default async function Page({
+  params: { id },
+}: {
+  params: { id: string }
+}) {
+  // starting loading item data
+  preload(id)
+  // perform another asynchronous task
+  const isAvailable = await checkIsAvailable()
+ 
+  return isAvailable ? <Item id={id} /> : null
+}
+import { cache } from 'react'
+import 'server-only'
+ 
+export const preload = (id: string) => {
+  void getItem(id)
+}
+ 
+export const getItem = cache(async (id: string) => {
+  // ...
+})
+module.exports = {
+  experimental: {
+    taint: true,
+  },
+}
+import { queryDataFromDB } from './api'
+import {
+  experimental_taintObjectReference,
+  experimental_taintUniqueValue,
+} from 'react'
+ 
+export async function getUserData() {
+  const data = await queryDataFromDB()
+  experimental_taintObjectReference(
+    'Do not pass the whole user object to the client',
+    data
+  )
+  experimental_taintUniqueValue(
+    "Do not pass the user's address to the client",
+    data,
+    data.address
+  )
+  return data
+}
+import { getUserData } from './data'
+ 
+export async function Page() {
+  const userData = getUserData()
+  return (
+    <ClientComponent
+      user={userData} // this will cause an error because of taintObjectReference
+      address={userData.address} // this will cause an error because of taintUniqueValue
+    />
+  )
+}
+async function getData() {
+  const res = await fetch('https://api.example.com/...')
+  // The return value is *not* serialized
+  // You can return Date, Map, Set, etc.
+ 
+  if (!res.ok) {
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error('Failed to fetch data')
+  }
+ 
+  return res.json()
+}
+ 
+export default async function Page() {
+  const data = await getData()
+ 
+  return <main></main>
+}
+// 'force-cache' is the default, and can be omitted
+fetch('https://...', { cache: 'force-cache' })
+fetch('https://...', { next: { revalidate: 3600 } })
+export const revalidate = 3600 // revalidate at most every hour
+export default async function Page() {
+  const res = await fetch('https://...', { next: { tags: ['collection'] } })
+  const data = await res.json()
+  // ...
+}
+'use server'
+ 
+import { revalidateTag } from 'next/cache'
+ 
+export default async function action() {
+  revalidateTag('collection')
+}
+fetch('https://...', { cache: 'no-store' })
+import { cache } from 'react'
+ 
+export const getItem = cache(async (id: string) => {
+  const item = await db.item.findUnique({ id })
+  return item
+})
+import { getItem } from '@/utils/get-item'
+ 
+export const revalidate = 3600 // revalidate the data at most every hour
+ 
+export default async function Layout({
+  params: { id },
+}: {
+  params: { id: string }
+}) {
+  const item = await getItem(id)
+  // ...
+}
+import { getItem } from '@/utils/get-item'
+ 
+export const revalidate = 3600 // revalidate the data at most every hour
+ 
+export default async function Page({
+  params: { id },
+}: {
+  params: { id: string }
+}) {
+  const item = await getItem(id)
+  // ...
+}
+// Server Component
+export default function Page() {
+  // Server Action
+  async function create() {
+    'use server'
+ 
+    // ...
+  }
+ 
+  return (
+    // ...
+  )
+}
+'use server'
+ 
+export async function create() {
+  // ...
+}
+import { create } from '@/app/actions'
+ 
+export function Button() {
+  return (
+    // ...
+  )
+}
+<ClientComponent updateItem={updateItem} />
+'use client'
+ 
+export default function ClientComponent({ updateItem }) {
+  return <form action={updateItem}>{/* ... */}</form>
+}
+export default function Page() {
+  async function createInvoice(formData: FormData) {
+    'use server'
+ 
+    const rawFormData = {
+      customerId: formData.get('customerId'),
+      amount: formData.get('amount'),
+      status: formData.get('status'),
+    }
+ 
+    // mutate data
+    // revalidate cache
+  }
+ 
+  return <form action={createInvoice}>...</form>
+}
+'use client'
+ 
+import { updateUser } from './actions'
+ 
+export function UserProfile({ userId }: { userId: string }) {
+  const updateUserWithId = updateUser.bind(null, userId)
+ 
+  return (
+    <form action={updateUserWithId}>
+      <input type="text" name="name" />
+      <button type="submit">Update User Name</button>
+    </form>
+  )
+}
+'use server'
+ 
+export async function updateUser(userId, formData) {
+  // ...
+}
+'use client'
+ 
+import { useFormStatus } from 'react-dom'
+ 
+export function SubmitButton() {
+  const { pending } = useFormStatus()
+ 
+  return (
+    <button type="submit" disabled={pending}>
+      Add
+    </button>
+  )
+}
+import { SubmitButton } from '@/app/submit-button'
+import { createItem } from '@/app/actions'
+ 
+// Server Component
+export default async function Home() {
+  return (
+    <form action={createItem}>
+      <input type="text" name="field-name" />
+      <SubmitButton />
+    </form>
+  )
+}
+'use server'
+ 
+import { z } from 'zod'
+ 
+const schema = z.object({
+  email: z.string({
+    invalid_type_error: 'Invalid Email',
+  }),
+})
+ 
+export default async function createUser(formData: FormData) {
+  const validatedFields = schema.safeParse({
+    email: formData.get('email'),
+  })
+ 
+  // Return early if the form data is invalid
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    }
+  }
+ 
+  // Mutate data
+}
+'use client'
+ 
+import { useFormState } from 'react-dom'
+import { createUser } from '@/app/actions'
+ 
+const initialState = {
+  message: '',
+}
+ 
+export function Signup() {
+  const [state, formAction] = useFormState(createUser, initialState)
+ 
+  return (
+    <form action={formAction}>
+      <label htmlFor="email">Email</label>
+      <input type="text" id="email" name="email" required />
+      {/* ... */}
+      <p aria-live="polite" className="sr-only">
+        {state?.message}
+      </p>
+      <button>Sign up</button>
+    </form>
+  )
+}
+'use server'
+ 
+export async function createUser(prevState: any, formData: FormData) {
+  // ...
+  return {
+    message: 'Please enter a valid email',
+  }
+}
+'use client'
+ 
+import { useOptimistic } from 'react'
+import { send } from './actions'
+ 
+type Message = {
+  message: string
+}
+ 
+export function Thread({ messages }: { messages: Message[] }) {
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic<
+    Message[],
+    string
+  >(messages, (state, newMessage) => [...state, { message: newMessage }])
+ 
+  return (
+    <div>
+      {optimisticMessages.map((m, k) => (
+        <div key={k}>{m.message}</div>
+      ))}
+      <form
+        action={async (formData: FormData) => {
+          const message = formData.get('message')
+          addOptimisticMessage(message)
+          await send(message)
+        }}
+      >
+        <input type="text" name="message" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  )
+}
+'use client'
+ 
+export function Entry() {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key === 'Enter' || e.key === 'NumpadEnter')
+    ) {
+      e.preventDefault()
+      e.currentTarget.form?.requestSubmit()
+    }
+  }
+ 
+  return (
+    <div>
+      <textarea name="entry" rows={20} required onKeyDown={handleKeyDown} />
+    </div>
+  )
+}
+'use client'
+ 
+import { incrementLike } from './actions'
+import { useState } from 'react'
+ 
+export default function LikeButton({ initialLikes }: { initialLikes: number }) {
+  const [likes, setLikes] = useState(initialLikes)
+ 
+  return (
+    <>
+      <p>Total Likes: {likes}</p>
+      <button
+        onClick={async () => {
+          const updatedLikes = await incrementLike()
+          setLikes(updatedLikes)
+        }}
+      >
+        Like
+      </button>
+    </>
+  )
+}
+'use client'
+ 
+import { publishPost, saveDraft } from './actions'
+ 
+export default function EditPost() {
+  return (
+    <form action={publishPost}>
+      <textarea
+        name="content"
+        onChange={async (e) => {
+          await saveDraft(e.target.value)
+        }}
+      />
+      <button type="submit">Publish</button>
+    </form>
+  )
+}
+'use client'
+ 
+import { incrementViews } from './actions'
+import { useState, useEffect } from 'react'
+ 
+export default function ViewCount({ initialViews }: { initialViews: number }) {
+  const [views, setViews] = useState(initialViews)
+ 
+  useEffect(() => {
+    const updateViews = async () => {
+      const updatedViews = await incrementViews()
+      setViews(updatedViews)
+    }
+ 
+    updateViews()
+  }, [])
+ 
+  return <p>Total Views: {views}</p>
+}
+'use server'
+ 
+export async function createTodo(prevState: any, formData: FormData) {
+  try {
+    // Mutate data
+  } catch (e) {
+    throw new Error('Failed to create task')
+  }
+}
+'use server'
+ 
+import { revalidatePath } from 'next/cache'
+ 
+export async function createPost() {
+  try {
+    // ...
+  } catch (error) {
+    // ...
+  }
+ 
+  revalidatePath('/posts')
+}
+'use server'
+ 
+import { revalidateTag } from 'next/cache'
+ 
+export async function createPost() {
+  try {
+    // ...
+  } catch (error) {
+    // ...
+  }
+ 
+  revalidateTag('posts')
+}
+'use server'
+ 
+import { redirect } from 'next/navigation'
+import { revalidateTag } from 'next/cache'
+ 
+export async function createPost(id: string) {
+  try {
+    // ...
+  } catch (error) {
+    // ...
+  }
+ 
+  revalidateTag('posts') // Update cached posts
+  redirect(`/post/${id}`) // Navigate to the new post page
+}
+'use server'
+ 
+import { cookies } from 'next/headers'
+ 
+export async function exampleAction() {
+  // Get cookie
+  const value = cookies().get('name')?.value
+ 
+  // Set cookie
+  cookies().set('name', 'Delba')
+ 
+  // Delete cookie
+  cookies().delete('name')
+}
+'use server'
+ 
+import { auth } from './lib'
+ 
+export function addItem() {
+  const { user } = auth()
+  if (!user) {
+    throw new Error('You must be signed in to perform this action')
+  }
+ 
+  // ...
+}
+export default function Page() {
+  const publishVersion = await getLatestVersion();
+ 
+  async function publish(formData: FormData) {
+    "use server";
+    if (publishVersion !== await getLatestVersion()) {
+      throw new Error('The version has changed since pressing publish');
+    }
+    ...
+  }
+ 
+  return <button action={publish}>Publish</button>;
+}
+/** @type {import('next').NextConfig} */
+module.exports = {
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['my-proxy.com', '*.my-proxy.com'],
+    },
+  },
+}
+'use client'
+ 
+import { useState } from 'react'
+ 
+export default function Counter() {
+  const [count, setCount] = useState(0)
+ 
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>Click me</button>
+    </div>
+  )
+}
+export async function getData() {
+  const res = await fetch('https://external-service.com/data', {
+    headers: {
+      authorization: process.env.API_KEY,
+    },
+  })
+ 
+  return res.json()
+}
+import 'server-only'
+ 
+export async function getData() {
+  const res = await fetch('https://external-service.com/data', {
+    headers: {
+      authorization: process.env.API_KEY,
+    },
+  })
+ 
+  return res.json()
+}
+'use client'
+ 
+import { useState } from 'react'
+import { Carousel } from 'acme-carousel'
+ 
+export default function Gallery() {
+  let [isOpen, setIsOpen] = useState(false)
+ 
+  return (
+    <div>
+      <button onClick={() => setIsOpen(true)}>View pictures</button>
+ 
+      {/* Works, since Carousel is used within a Client Component */}
+      {isOpen && <Carousel />}
+    </div>
+  )
+}
